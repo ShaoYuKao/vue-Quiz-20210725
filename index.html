@@ -23,6 +23,7 @@
       }
     </style>
 
+    <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js"></script>
     <script src="https://unpkg.com/vue@next"></script>
   </head>
 
@@ -85,7 +86,7 @@
             <td>{{ u.sarea }}</td>
             <td>{{ u.sbi }}</td>
             <td>{{ u.tot }}</td>
-            <td>{{ u.mday }}</td>
+            <td>{{ mdayConvert(u.mday) }}</td>
           </tr>
         </tbody>
       </table>
@@ -145,6 +146,9 @@
             return data.sort(function (a, b) {
               return Number(a[descAttr]) < Number(b[descAttr]) ? 1 : -1;
             });
+          },
+          mdayConvert(mday) {
+            return dayjs(mday, "YYYYMMDDHHmmss").format("YYYY/MM/DD HH:mm:ss");
           },
         },
         created() {
