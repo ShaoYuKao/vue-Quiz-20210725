@@ -46,13 +46,33 @@
             <th>場站區域</th>
             <th>
               目前可用車輛
-              <i class="fa fa-sort-asc" aria-hidden="true"></i>
-              <i class="fa fa-sort-desc" aria-hidden="true"></i>
+              <i
+                class="fa fa-sort-asc"
+                aria-hidden="true"
+                @click="sbiAscClick"
+                v-if="!isSbiAsc"
+              ></i>
+              <i
+                class="fa fa-sort-desc"
+                aria-hidden="true"
+                @click="sbiDescClick"
+                v-if="!isSbiDesc"
+              ></i>
             </th>
             <th>
               總停車格
-              <i class="fa fa-sort-asc" aria-hidden="true"></i>
-              <i class="fa fa-sort-desc" aria-hidden="true"></i>
+              <i
+                class="fa fa-sort-asc"
+                aria-hidden="true"
+                @click="totAscClick"
+                v-if="!isTotAsc"
+              ></i>
+              <i
+                class="fa fa-sort-desc"
+                aria-hidden="true"
+                @click="totDescClick"
+                v-if="!isTotDesc"
+              ></i>
             </th>
             <th>資料更新時間</th>
           </tr>
@@ -86,7 +106,46 @@
           return {
             uBikeStops: [],
             uBikeStopSearch: "",
+            isSbiAsc: false,
+            isSbiDesc: false,
+            isTotAsc: false,
+            isTotDesc: false,
           };
+        },
+        methods: {
+          initSortState() {
+            this.isSbiAsc = false;
+            this.isSbiDesc = false;
+            this.isTotAsc = false;
+            this.isTotDesc = false;
+          },
+          sbiAscClick() {
+            this.initSortState();
+            this.isSbiAsc = true;
+          },
+          sbiDescClick() {
+            this.initSortState();
+            this.isSbiDesc = true;
+          },
+          totAscClick() {
+            this.initSortState();
+            this.isTotAsc = true;
+          },
+          totDescClick() {
+            this.initSortState();
+            this.isTotDesc = true;
+          },
+          ascData(data, ascAttr) {
+            data.sort(function (a, b) {
+              return Number(a[ascAttr]) > Number(b[ascAttr]) ? 1 : -1;
+            });
+            return data;
+          },
+          descData(data, descAttr) {
+            return data.sort(function (a, b) {
+              return Number(a[descAttr]) < Number(b[descAttr]) ? 1 : -1;
+            });
+          },
         },
         created() {
           fetch(
@@ -102,9 +161,29 @@
         },
         computed: {
           uBikeStopFilter() {
-            return this.uBikeStops.filter((item) => {
+            let result = this.uBikeStops.filter((item) => {
               return item.sna.indexOf(this.uBikeStopSearch) > -1;
             });
+
+            // 目前可用車輛排序
+            if (this.isSbiAsc) {
+              result = this.ascData(result, "sbi");
+            }
+
+            if (this.isSbiDesc) {
+              result = this.descData(result, "sbi");
+            }
+
+            // 總停車格排序
+            if (this.isTotAsc) {
+              result = this.ascData(result, "tot");
+            }
+
+            if (this.isTotDesc) {
+              result = this.descData(result, "tot");
+            }
+
+            return result;
           },
         },
       }).mount("#app");
