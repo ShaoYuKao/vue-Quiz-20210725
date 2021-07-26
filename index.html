@@ -15,6 +15,7 @@
     body {
       padding: 1rem;
     }
+
     .pager {
       display: block;
       min-width: 40px;
@@ -23,9 +24,11 @@
       line-height: 30px;
       border: 1px solid #aaa;
     }
+
     .pager a {
       text-decoration: none;
     }
+
     .pager.active .page-link {
       color: #fff;
       background-color: #007bff;
@@ -82,13 +85,33 @@
           <th>場站區域</th>
           <th>
             目前可用車輛
-            <i class="fa fa-sort-asc" aria-hidden="true" @click="sbiAscClick" v-if="!isSbiAsc"></i>
-            <i class="fa fa-sort-desc" aria-hidden="true" @click="sbiDescClick" v-if="!isSbiDesc"></i>
+            <i 
+              class="fa fa-sort-asc" 
+              aria-hidden="true" 
+              @click="sortClick('sbi', 'asc')" 
+              v-if="!(sortField === 'sbi' && sortType === 'asc')"
+            ></i>
+            <i 
+              class="fa fa-sort-desc" 
+              aria-hidden="true" 
+              @click="sortClick('sbi', 'desc')" 
+              v-if="!(sortField === 'sbi' && sortType === 'desc')"
+            ></i>
           </th>
           <th>
             總停車格
-            <i class="fa fa-sort-asc" aria-hidden="true" @click="totAscClick" v-if="!isTotAsc"></i>
-            <i class="fa fa-sort-desc" aria-hidden="true" @click="totDescClick" v-if="!isTotDesc"></i>
+            <i 
+              class="fa fa-sort-asc" 
+              aria-hidden="true" 
+              @click="sortClick('tot', 'asc')" 
+              v-if="!(sortField === 'tot' && sortType === 'asc')"
+            ></i>
+            <i 
+              class="fa fa-sort-desc" 
+              aria-hidden="true" 
+              @click="sortClick('tot', 'desc')" 
+              v-if="!(sortField === 'tot' && sortType === 'desc')"
+            ></i>
           </th>
           <th>資料更新時間</th>
         </tr>
@@ -122,10 +145,8 @@
         return {
           uBikeStops: [],
           uBikeStopSearch: "",
-          isSbiAsc: false,
-          isSbiDesc: false,
-          isTotAsc: false,
-          isTotDesc: false,
+          sortField: '',
+          sortType: '',
           pageTotal: 0,   // 總頁數
           currentPage: 1, // 當前頁數
           startCount: 0,  // 起始資料
@@ -138,26 +159,8 @@
       },
       methods: {
         initSortState() {
-          this.isSbiAsc = false;
-          this.isSbiDesc = false;
-          this.isTotAsc = false;
-          this.isTotDesc = false;
-        },
-        sbiAscClick() {
-          this.initSortState();
-          this.isSbiAsc = true;
-        },
-        sbiDescClick() {
-          this.initSortState();
-          this.isSbiDesc = true;
-        },
-        totAscClick() {
-          this.initSortState();
-          this.isTotAsc = true;
-        },
-        totDescClick() {
-          this.initSortState();
-          this.isTotDesc = true;
+          this.sortField = '';
+          this.sortType = '';
         },
         ascData(data, ascAttr) {
           data.sort(function (a, b) {
@@ -210,10 +213,7 @@
             }
           });
 
-          console.log("=== 總頁數 ===", pageTotal);
-
           this.showPages(currentPage, pageTotal, this.pagerCount);
-
 
           this.pageTotal = pageTotal;     // 總頁數
           this.startCount = minData;      // 起始資料
@@ -291,7 +291,11 @@
               this.uBikeStops = stops;
               this.initSortState();
             });
-        }
+        },
+        sortClick(field, type) {
+          this.sortField = field;
+          this.sortType = type;
+        },
       },
       created() {
         this.refreshData();
@@ -302,22 +306,18 @@
             return item.sna.indexOf(this.uBikeStopSearch) > -1;
           });
 
-          // 目前可用車輛排序
-          if (this.isSbiAsc) {
-            result = this.ascData(result, "sbi");
+          if (this.sortType !== "" && this.sortField !== "") {
+            switch (this.sortType) {
+              case "asc":
+                result = this.ascData(result, this.sortField);
+                break;
+              case "desc":
+                result = this.descData(result, this.sortField);
+                break;
+              default:
+                break;
+            }
           }
-          if (this.isSbiDesc) {
-            result = this.descData(result, "sbi");
-          }
-
-          // 總停車格排序
-          if (this.isTotAsc) {
-            result = this.ascData(result, "tot");
-          }
-          if (this.isTotDesc) {
-            result = this.descData(result, "tot");
-          }
-
           result = this.pagination(result, this.currentPage);
           return result;
         },
