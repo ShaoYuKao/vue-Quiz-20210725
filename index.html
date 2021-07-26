@@ -1,157 +1,285 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>練習 13： YouBike 臺北市公共自行車即時資訊</title>
 
-    <link
-      rel="stylesheet"
-      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css"
-      integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
-    />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>練習 13： YouBike 臺北市公共自行車即時資訊</title>
 
-    <style>
-      body {
-        padding: 1em;
-      }
-    </style>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css"
+    integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
 
-    <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js"></script>
-    <script src="https://unpkg.com/vue@next"></script>
-  </head>
+  <style>
+    body {
+      padding: 1rem;
+    }
+    .pager {
+      display: block;
+      min-width: 40px;
+      height: 40px;
+      text-align: center;
+      line-height: 30px;
+      border: 1px solid #aaa;
+    }
+    .pager a {
+      text-decoration: none;
+    }
+    .pager.active .page-link {
+      color: #fff;
+      background-color: #007bff;
+      border-color: #007bff;
+    }
+  </style>
 
-  <body>
-    <p>
-      練習 13： YouBike 臺北市公共自行車即時資訊 <br />
-      完成下列表格，並加入: 1. 站點名稱搜尋 2. 目前可用車輛 / 總停車格
-      的排序功能
-    </p>
+  <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js"></script>
+  <script src="https://unpkg.com/vue@next"></script>
+</head>
 
-    <hr />
+<body>
+  <p>
+    練習 13： YouBike 臺北市公共自行車即時資訊 <br /> 完成下列表格，並加入: 1. 站點名稱搜尋 2. 目前可用車輛 / 總停車格 的排序功能
+  </p>
 
-    <div id="app">
-      <p>站點名稱搜尋: <input type="text" v-model="uBikeStopSearch" /></p>
+  <hr />
 
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>場站名稱</th>
-            <th>場站區域</th>
-            <th>
-              目前可用車輛
-              <i
-                class="fa fa-sort-asc"
-                aria-hidden="true"
-                @click="sbiAscClick"
-                v-if="!isSbiAsc"
-              ></i>
-              <i
-                class="fa fa-sort-desc"
-                aria-hidden="true"
-                @click="sbiDescClick"
-                v-if="!isSbiDesc"
-              ></i>
-            </th>
-            <th>
-              總停車格
-              <i
-                class="fa fa-sort-asc"
-                aria-hidden="true"
-                @click="totAscClick"
-                v-if="!isTotAsc"
-              ></i>
-              <i
-                class="fa fa-sort-desc"
-                aria-hidden="true"
-                @click="totDescClick"
-                v-if="!isTotDesc"
-              ></i>
-            </th>
-            <th>資料更新時間</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- 請補完 -->
-          <tr v-for="(u, index) in uBikeStopFilter" key="index">
-            <td>{{index + 1}}</td>
-            <td>{{ u.sna }}</td>
-            <td>{{ u.sarea }}</td>
-            <td>{{ u.sbi }}</td>
-            <td>{{ u.tot }}</td>
-            <td>{{ mdayConvert(u.mday) }}</td>
-          </tr>
-        </tbody>
-      </table>
+  <div id="app">
+    <div style="display: flex; justify-content: space-between">
+      <p>
+        站點名稱搜尋: <input type="text" v-model="uBikeStopSearch" />
+      </p>
+
+      <button style="height: 40px;" @click="refreshData()">重新更新資料</button>
+
+      <ul style="display: flex">
+        <li class="pager" v-if="hasPage" @click="firstPageClick">
+          <a href="#"> &lt;&lt; </a>
+        </li>
+        <li class="pager" v-if="hasPage" @click="hasPageClick">
+          <a href="#"> &lt; </a>
+        </li>
+
+        <li :class="{'pager': true, 'active': currentPage === n}" v-for="n of pagerData">
+          <!-- n 從 1 開始計算 -->
+          <a class="page-link" href="#" @click="pageClick(n)"> {{ n }} </a>
+        </li>
+
+        <li class="pager" v-if="hasNext" @click="hasNextClick">
+          <a href="#"> &gt; </a>
+        </li>
+        <li class="pager" v-if="hasNext" @click="lastPageClick">
+          <a href="#"> &gt;&gt; </a>
+        </li>
+      </ul>
     </div>
 
-    <script>
-      // 欄位說明請參照:
-      // http://data.taipei/opendata/datalist/datasetMeta?oid=8ef1626a-892a-4218-8344-f7ac46e1aa48
-      // 半成品參考: https://kuro.tw/vue-ubike-information/
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>場站名稱</th>
+          <th>場站區域</th>
+          <th>
+            目前可用車輛
+            <i class="fa fa-sort-asc" aria-hidden="true" @click="sbiAscClick" v-if="!isSbiAsc"></i>
+            <i class="fa fa-sort-desc" aria-hidden="true" @click="sbiDescClick" v-if="!isSbiDesc"></i>
+          </th>
+          <th>
+            總停車格
+            <i class="fa fa-sort-asc" aria-hidden="true" @click="totAscClick" v-if="!isTotAsc"></i>
+            <i class="fa fa-sort-desc" aria-hidden="true" @click="totDescClick" v-if="!isTotDesc"></i>
+          </th>
+          <th>資料更新時間</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 請補完 -->
+        <tr v-for="(u, index) in uBikeStopFilter" key="index">
+          <td>{{startCount + index}}</td>
+          <td>{{ u.sna }}</td>
+          <td>{{ u.sarea }}</td>
+          <td>{{ u.sbi }}</td>
+          <td>{{ u.tot }}</td>
+          <td>{{ mdayConvert(u.mday) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
-      // sno：站點代號、 sna：場站名稱(中文)、 tot：場站總停車格、
-      // sbi：場站目前車輛數量、 sarea：場站區域(中文)、 mday：資料更新時間、
-      // lat：緯度、 lng：經度、 ar：地(中文)、 sareaen：場站區域(英文)、
-      // snaen：場站名稱(英文)、 aren：地址(英文)、 bemp：空位數量、 act：全站禁用狀態
+  <script>
+    // 欄位說明請參照:
+    // http://data.taipei/opendata/datalist/datasetMeta?oid=8ef1626a-892a-4218-8344-f7ac46e1aa48
+    // 半成品參考: https://kuro.tw/vue-ubike-information/
 
-      const app = Vue.createApp({
-        data() {
-          return {
-            uBikeStops: [],
-            uBikeStopSearch: "",
-            isSbiAsc: false,
-            isSbiDesc: false,
-            isTotAsc: false,
-            isTotDesc: false,
-          };
+    // sno：站點代號、 sna：場站名稱(中文)、 tot：場站總停車格、
+    // sbi：場站目前車輛數量、 sarea：場站區域(中文)、 mday：資料更新時間、
+    // lat：緯度、 lng：經度、 ar：地(中文)、 sareaen：場站區域(英文)、
+    // snaen：場站名稱(英文)、 aren：地址(英文)、 bemp：空位數量、 act：全站禁用狀態
+
+    const app = Vue.createApp({
+      data() {
+        return {
+          uBikeStops: [],
+          uBikeStopSearch: "",
+          isSbiAsc: false,
+          isSbiDesc: false,
+          isTotAsc: false,
+          isTotDesc: false,
+          pageTotal: 0,   // 總頁數
+          currentPage: 1, // 當前頁數
+          startCount: 0,  // 起始資料
+          hasPage: false,
+          hasNext: false,
+          pagerData: [],  // 頁籤資料
+          perpage: 10,    // 預設每一頁只顯示 10 筆資料(可使動調整)
+          pagerCount: 5,  // 一次最多顯示 n 個頁籤(可使動調整)
+        };
+      },
+      methods: {
+        initSortState() {
+          this.isSbiAsc = false;
+          this.isSbiDesc = false;
+          this.isTotAsc = false;
+          this.isTotDesc = false;
         },
-        methods: {
-          initSortState() {
-            this.isSbiAsc = false;
-            this.isSbiDesc = false;
-            this.isTotAsc = false;
-            this.isTotDesc = false;
-          },
-          sbiAscClick() {
-            this.initSortState();
-            this.isSbiAsc = true;
-          },
-          sbiDescClick() {
-            this.initSortState();
-            this.isSbiDesc = true;
-          },
-          totAscClick() {
-            this.initSortState();
-            this.isTotAsc = true;
-          },
-          totDescClick() {
-            this.initSortState();
-            this.isTotDesc = true;
-          },
-          ascData(data, ascAttr) {
-            data.sort(function (a, b) {
-              return Number(a[ascAttr]) > Number(b[ascAttr]) ? 1 : -1;
-            });
-            return data;
-          },
-          descData(data, descAttr) {
-            return data.sort(function (a, b) {
-              return Number(a[descAttr]) < Number(b[descAttr]) ? 1 : -1;
-            });
-          },
-          mdayConvert(mday) {
-            return dayjs(mday, "YYYYMMDDHHmmss").format("YYYY/MM/DD HH:mm:ss");
-          },
+        sbiAscClick() {
+          this.initSortState();
+          this.isSbiAsc = true;
         },
-        created() {
+        sbiDescClick() {
+          this.initSortState();
+          this.isSbiDesc = true;
+        },
+        totAscClick() {
+          this.initSortState();
+          this.isTotAsc = true;
+        },
+        totDescClick() {
+          this.initSortState();
+          this.isTotDesc = true;
+        },
+        ascData(data, ascAttr) {
+          data.sort(function (a, b) {
+            return Number(a[ascAttr]) > Number(b[ascAttr]) ? 1 : -1;
+          });
+          return data;
+        },
+        descData(data, descAttr) {
+          return data.sort(function (a, b) {
+            return Number(a[descAttr]) < Number(b[descAttr]) ? 1 : -1;
+          });
+        },
+        mdayConvert(mday) {
+          return dayjs(mday, "YYYYMMDDHHmmss").format("YYYY/MM/DD HH:mm:ss");
+        },
+        pagination(jsonData, nowPage) {
+          // 取得全部資料長度
+          const dataTotal = jsonData.length;
+
+          // 預設每一頁只顯示 n 筆資料。
+          const perpage = this.perpage;
+
+          // page 按鈕總數量 = 總資料數量 / 每一頁要顯示的資料
+          // 有餘數則無條件進位
+          const pageTotal = Math.ceil(dataTotal / perpage);
+
+          // 當前頁數，對應現在當前頁數
+          let currentPage = nowPage;
+
+          // 當"當前頁數"比"總頁數"大的時候，"當前頁數"就等於"總頁數"
+          if (currentPage > pageTotal) {
+            currentPage = pageTotal;
+          }
+
+          // 計算每頁第 1 筆資料起始位置
+          let minData = currentPage * perpage - perpage + 1;
+          if (0 >= minData) {
+            minData = 0;
+          }
+
+          // 計算每頁最後 1 筆資料位置
+          let maxData = currentPage * perpage;
+
+          const data = [];
+          jsonData.forEach((item, index) => {
+            const num = index + 1;
+            // 當 num 比 minData 大且又小於 maxData 就是此頁要顯示的資料
+            if (num >= minData && num <= maxData) {
+              data.push(item);
+            }
+          });
+
+          console.log("=== 總頁數 ===", pageTotal);
+
+          this.showPages(currentPage, pageTotal, this.pagerCount);
+
+
+          this.pageTotal = pageTotal;     // 總頁數
+          this.startCount = minData;      // 起始資料
+          this.hasPage = currentPage > 1;
+          this.hasNext = currentPage < pageTotal;
+
+          return data;
+        },
+        pageClick(page) {
+          if (this.currentPage === page) {
+            return;
+          }
+          this.currentPage = page;
+        },
+        firstPageClick() {
+          this.currentPage = 1;
+        },
+        hasPageClick() {
+          if (0 === this.currentPage) {
+            return;
+          }
+          this.currentPage--;
+        },
+        hasNextClick() {
+          if (this.pageTotal === this.currentPage) {
+            return;
+          }
+          this.currentPage++;
+        },
+        lastPageClick() {
+          this.currentPage = this.pageTotal;
+        },
+        showPages(currentPage, totalPage, showPageCount) {
+          // currentPage: 當前頁碼
+          // totalPage : 總頁碼數
+          // showPageCount: 當前頁碼面前要顯示的頁碼數量
+
+          let pagerData = [];
+          let endPage = totalPage;
+
+          if (totalPage <= showPageCount) {
+            endPage = totalPage;
+
+            for (let i = 1; i <= endPage; i++) {
+              pagerData.push(i);
+            }
+          } else {
+            if (currentPage <= showPageCount) {
+              endPage = showPageCount;
+            }
+
+            let temp = (totalPage / showPageCount);
+            for (let i = 1; i <= temp; i++) {
+              if (currentPage <= showPageCount * i) {
+                endPage = showPageCount * i;
+                break;
+              }
+            }
+            for (let i = endPage - 5 + 1; i <= endPage; i++) {
+              pagerData.push(i);
+            }
+          }
+
+          this.pagerData = pagerData;
+        },
+        refreshData() {
           fetch(
             "https://tcgbusfs.blob.core.windows.net/blobyoubike/YouBikeTP.gz"
           )
@@ -161,36 +289,41 @@
                 (key) => json.retVal[key]
               );
               this.uBikeStops = stops;
+              this.initSortState();
             });
+        }
+      },
+      created() {
+        this.refreshData();
+      },
+      computed: {
+        uBikeStopFilter() {
+          let result = this.uBikeStops.filter((item) => {
+            return item.sna.indexOf(this.uBikeStopSearch) > -1;
+          });
+
+          // 目前可用車輛排序
+          if (this.isSbiAsc) {
+            result = this.ascData(result, "sbi");
+          }
+          if (this.isSbiDesc) {
+            result = this.descData(result, "sbi");
+          }
+
+          // 總停車格排序
+          if (this.isTotAsc) {
+            result = this.ascData(result, "tot");
+          }
+          if (this.isTotDesc) {
+            result = this.descData(result, "tot");
+          }
+
+          result = this.pagination(result, this.currentPage);
+          return result;
         },
-        computed: {
-          uBikeStopFilter() {
-            let result = this.uBikeStops.filter((item) => {
-              return item.sna.indexOf(this.uBikeStopSearch) > -1;
-            });
+      },
+    }).mount("#app");
+  </script>
+</body>
 
-            // 目前可用車輛排序
-            if (this.isSbiAsc) {
-              result = this.ascData(result, "sbi");
-            }
-
-            if (this.isSbiDesc) {
-              result = this.descData(result, "sbi");
-            }
-
-            // 總停車格排序
-            if (this.isTotAsc) {
-              result = this.ascData(result, "tot");
-            }
-
-            if (this.isTotDesc) {
-              result = this.descData(result, "tot");
-            }
-
-            return result;
-          },
-        },
-      }).mount("#app");
-    </script>
-  </body>
 </html>
